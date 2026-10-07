@@ -1,0 +1,16 @@
+# Test mode: runs n8n only on your computer, no domain or Cloudflare needed.
+# Start:  docker compose -f docker-compose.local.yml up -d
+# Open:   http://localhost:5678
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=Europe/Belgrade
+      - TZ=Europe/Belgrade
+    volumes:
+      - ./n8n-data:/home/node/.n8n
