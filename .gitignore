@@ -1,0 +1,7 @@
+# Secrets: never commit these
+.env
+
+# n8n's saved workflows, credentials and database (stays on your computer)
+n8n-data/
+
+__pycache__/

@@ -1,0 +1,30 @@
+# n8n + Cloudflare Tunnel
+
+Runs [n8n](https://n8n.io) on your own computer with Docker and makes it
+reachable at `https://n8n.yourdomain.com` through a Cloudflare Tunnel.
+No port forwarding needed. Same setup as the course, with the tokens kept
+out of GitHub.
+
+## What lives where
+
+- **GitHub (this repo):** the setup files. No secrets.
+- **Your computer:** the `.env` file with your tokens, and `n8n-data/`
+  with your workflows. Both are ignored by git.
+- **Vercel:** any websites you build that call your n8n webhooks.
+  n8n itself can't run on Vercel because it has to stay on all the time.
+
+## Setup
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and Python 3, and open Docker Desktop.
+2. Copy `.env.example` to `.env` and fill in your Cloudflare tokens and domain.
+3. Install the one Python library: `pip install -r requirements.txt`
+4. Run: `python deploy_n8n.py`
+
+When it finishes it prints your live n8n link.
+
+## Everyday commands
+
+- Stop n8n: `docker compose down`
+- Start it again: `docker compose up -d`
+- Update n8n: `docker compose pull && docker compose up -d`
+- See if it's running: `docker ps`

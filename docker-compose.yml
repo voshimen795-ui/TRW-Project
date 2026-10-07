@@ -1,0 +1,32 @@
+# Runs n8n and the Cloudflare Tunnel. Values come from the .env file.
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: always
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_HOST}
+      - GENERIC_TIMEZONE=${TIMEZONE:-Europe/Belgrade}
+      - TZ=${TIMEZONE:-Europe/Belgrade}
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+    networks:
+      - n8n-net
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-n8n
+    restart: always
+    depends_on:
+      - n8n
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - n8n-net
+
+networks:
+  n8n-net:
+    driver: bridge
