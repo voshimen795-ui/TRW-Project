@@ -39,3 +39,10 @@ When it finishes it prints your live n8n link.
 - Start it again: `docker compose up -d`
 - Update n8n: `docker compose pull && docker compose up -d`
 - See if it's running: `docker ps`
+
+## Workflows
+
+- `workflows/lead-finder.json`: finds local businesses on Google Maps
+  (through Apify), scores them as leads for AI automation, and gives you a
+  CSV file. Needs a free Apify account: in n8n, create a "Header Auth"
+  credential with Name `Authorization` and Value `Bearer <your Apify API token>`.

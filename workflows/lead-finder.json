@@ -1,0 +1,161 @@
+{
+  "name": "Lead Finder (Google Maps)",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Search form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "5d6f6f0a-1c1e-4f4e-9a51-7c2b1f0e2a11",
+      "parameters": {
+        "formTitle": "Find leads",
+        "formDescription": "Search Google Maps for local businesses and get a scored lead list (CSV).",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Business type",
+              "placeholder": "e.g. dentist",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "City",
+              "placeholder": "e.g. Belgrade, Serbia",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "How many businesses",
+              "fieldType": "number",
+              "placeholder": "20",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Search Google Maps (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  searchStringsArray: [$json[\"Business type\"]],\n  locationQuery: $json[\"City\"],\n  maxCrawledPlacesPerSearch: Number($json[\"How many businesses\"]) || 20,\n  language: \"en\",\n  skipClosedPlaces: true\n}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Score leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Turns Google Maps results into a scored lead list.\n// Higher score = better prospect for AI automation.\nconst leads = $input.all().map(({ json: p }) => {\n  let score = 0;\n  const reasons = [];\n\n  if (!p.website) {\n    score += 3;\n    reasons.push('No website: offer a site with booking/chatbot');\n  }\n  if (p.totalScore && p.totalScore < 4.3) {\n    score += 1;\n    reasons.push('Rating under 4.3: offer review automation');\n  }\n  if ((p.reviewsCount || 0) < 30) {\n    score += 1;\n    reasons.push('Few reviews: offer review requests after visits');\n  }\n  if (p.phone) score += 1; // easy to call\n\n  return {\n    json: {\n      Score: score,\n      Business: p.title || '',\n      Category: p.categoryName || '',\n      Phone: p.phone || '',\n      Website: p.website || '',\n      Rating: p.totalScore ?? '',\n      Reviews: p.reviewsCount ?? 0,\n      Address: p.address || '',\n      'Google Maps': p.url || '',\n      'Why it is a lead': reasons.join('; '),\n    },\n  };\n});\n\nleads.sort((a, b) => b.json.Score - a.json.Score);\nreturn leads;\n"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Make CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "operation": "csv",
+        "options": {
+          "fileName": "leads.csv"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Download leads",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        960,
+        0
+      ],
+      "webhookId": "8e2c4b7a-3d5f-4a6b-9c1d-2e3f4a5b6c7d",
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "Your leads are ready",
+        "completionMessage": "The CSV file opens in Excel or Google Sheets. Best leads are at the top.",
+        "inputDataFieldName": "data",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Search form": {
+      "main": [
+        [
+          {
+            "node": "Search Google Maps (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Google Maps (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Score leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score leads": {
+      "main": [
+        [
+          {
+            "node": "Make CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make CSV": {
+      "main": [
+        [
+          {
+            "node": "Download leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
